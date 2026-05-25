@@ -51,6 +51,10 @@ export class UserController {
           password: req.body.password,
         });
 
+      if (status !== 200) {
+        return res.status(status).json({ success: false, message });
+      }
+
       res.cookie("refresh_token", refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
@@ -59,7 +63,7 @@ export class UserController {
       });
 
       return res.status(200).json({
-        status,
+        success: true,
         message,
         token,
       });

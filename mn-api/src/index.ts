@@ -9,7 +9,9 @@ const app = express();
 const server = new http.Server(app);
 
 const corsOptions = {
-  origin: "*",
+  origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
+    callback(null, true);
+  },
   methods: ["GET", "POST", "PUT", "DELETE"],
   allowedHeaders: "Content-Type, Authorization",
   credentials: true,
