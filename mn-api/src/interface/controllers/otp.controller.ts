@@ -1,0 +1,55 @@
+import { Request, Response } from "express";
+import { SendOtpUseCase } from "../../applications/use-cases/user/SentOtp.usecase";
+import { VerifyOtpUseCase } from "../../applications/use-cases/user/VerifyOtp.usecase";
+import { AuthService } from "../../infrastructure/service/AuthService.service";
+import { accessTokenConfig } from "../../infrastructure/config/jwt.config";
+
+export class OtpController {
+  constructor(
+    private sendOtpUseCase: SendOtpUseCase,
+    private verifyOtpUseCase: VerifyOtpUseCase
+  ) {}
+
+  async resendOtp(req: Request, res: Response) {
+    try {
+      const { phoneNumber } = req.body;
+
+      await this.sendOtpUseCase.execute(phoneNumber);
+      return res
+        .status(200)
+        .json({ success: true, message: "OTP sent successfully" });
+    } catch (error) {
+      return res
+        .status(500)
+        .json({ success: false, message: "Error sending OTP" });
+    }
+  }
+
+  async verifyOtp(req: Request, res: Response) {
+    try {
+      const { phoneNumber, otpCode, userId } = req.body;
+      const isValid = await this.verifyOtpUseCase.execute(phoneNumber, otpCode);
+
+      if (isValid) {
+        const accessToken = AuthService.generateToken(
+          { userId },
+          accessTokenConfig
+        );
+
+        return res
+          .status(200)
+          .json({
+            accessToken,
+            success: true,
+            message: "OTP verified successfully",
+          });
+      }
+
+      return res.status(400).json({ success: false, message: "Invalid OTP" });
+    } catch (error) {
+      return res
+        .status(500)
+        .json({ success: false, message: "Error verifying OTP" });
+    }
+  }
+}

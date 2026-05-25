@@ -1,0 +1,46 @@
+import { IOtpRepository } from "../../domain/interfaces/IOtpRepository";
+import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient();
+
+export class OtpRepository implements IOtpRepository {
+  async saveOtp(
+    otp: string,
+    phoneNumber: string,
+    expiresIn: number
+  ): Promise<void> {
+    const expiresAt = new Date(Date.now() + expiresIn * 1000); // Calculate expiration time
+
+    await prisma.verify.create({
+      data: {
+        otp_code: otp,
+        user: {
+          connect: { mobile_number: phoneNumber },
+        },
+        expires_at: expiresAt,
+        is_verified: false,
+      },
+    });
+  }
+
+  async getOtp(phoneNumber: string): Promise<string | null> {
+    const verifyRecord = await prisma.verify.findFirst({
+      where: {
+        user: { mobile_number: phoneNumber },
+        is_verified: false,
+        expires_at: { gte: new Date() },
+      },
+    });
+
+    return verifyRecord ? verifyRecord.otp_code : null;
+  }
+
+  async deleteOtp(phoneNumber: string): Promise<void> {
+    await prisma.verify.deleteMany({
+      where: {
+        user: { mobile_number: phoneNumber },
+        is_verified: false,
+      },
+    });
+  }
+}
